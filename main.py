@@ -1,9 +1,9 @@
-from db.session import create_db_session
+from app.db.session import create_db_session
 
-from models.ClassifierResult import ClassifierResult
-from models.MarketData import MarketData
+from app.models.ClassifierResult import ClassifierResult
+from app.models.MarketData import MarketData
 
-from sqlalchemy import select
+from sqlalchemy import select, label
 from sqlalchemy.orm import aliased
 from dotenv import load_dotenv
 import os
@@ -13,10 +13,56 @@ class condition:
     sideway = 1
     downtrend = 2
 
+class DataFeeder:
+    def pullData(session, ticker: str, classifier_model: str, feature_set: str):
+        with session() as db:
+            # Create an alias for the subquery
+            classifier_subq = (
+                select(
+                    ClassifierResult.report_date.label('report_date')
+                    ClassifierResult.ticker.label('ticker'),
+                    ClassifierResult.model.label('model'),
+                    ClassifierResult.feature_set.label('feature_set'),
+                    ClassifierResult.uptrend_prob.label('uptrend_prob'),
+                    ClassifierResult.side_prob.label('side_prob'),
+                    ClassifierResult.downtrend_prob.label('downtrend_prob'),
+                    ClassifierResult.predicted_label.label('predicted_label')
+                )
+                .where(
+                    (ClassifierResult.ticker == ticker) &
+                    (ClassifierResult.model == model) &
+                    (ClassifierResult.feature_set == feature_set)
+                )
+                .alias('classifier_subq')
+            )
+
+            # Perform the main query with a left join
+            query = (
+                select( 
+                    classifier_subq.report_date,
+                    classifier_subq.ticker,
+                    classifier_subq.model,
+                    classifier_subq.feature_set,
+                    classifier_subq.uptrend_prob,
+                    classifier_subq.side_prob,
+                    classifier_subq.downtrend_prob,
+                    classifier_subq.predicted_label,
+                    MarketData.
+                )
+                .select_from(
+                    classifier_subq.join(
+                        MarketData,
+                        (classifier_subq.c.report_date == MarketData.report_date)
+                        & (classifier_subq.c.ticker == MarketData.ticker)
+                    )
+                )
+            ).order_by(MarketData.report_date)
+
+            query_result = db.execute(query).all()
+
 ticker = "CVX"
 model = "CNNv0"
 feature_set = "processed technical indicators (20 days)"
-start_date = "2007-01-01"
 
 # Step 1 - Pull one year worth of data from the database
 load_dotenv()
@@ -27,32 +73,8 @@ session = create_db_session(
     database=os.getenv("DB_NAME"),
     port=os.getenv("DB_PORT")
 )
-with session() as db:
-    # Create an alias for the subquery
-    classifier_subq = (
-        select(ClassifierResult)
-        .where(
-            (ClassifierResult.ticker == ticker) &
-            (ClassifierResult.model == model) &
-            (ClassifierResult.feature_set == feature_set)
-        )
-        .alias('classifier_subq')
-    )
 
-    # Perform the main query with a left join
-    query = (
-        select(MarketData, classifier_subq.c)
-        .select_from(
-            classifier_subq.join(
-                MarketData,
-                (classifier_subq.c.report_date == MarketData.report_date)
-                & (classifier_subq.c.ticker == MarketData.ticker)
-            )
-        )
-        .where(MarketData.report_date >= start_date)
-    ).order_by(MarketData.report_date)
-
-    query_result = db.execute(query).all()
+query_result = DataFeeder().pullData(session, ticker, model, feature_set)
 
 # Step 2 - Initialize
 capital = 10000
