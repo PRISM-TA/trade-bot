@@ -1,62 +1,11 @@
 from app.db.session import create_db_session
+from app.strategies.LongOnlyStrategy import LongOnlyStrategy, LongOnlyStrategyParam
+from app.datafeed.DataFeeder import DataFeeder
 
-from app.models.TradeBotDataFeed import TradeBotDataFeed
-from app.models.ClassifierResult import ClassifierResult
-from app.models.MarketData import MarketData
-
-from sqlalchemy import select, label
-from sqlalchemy.orm import aliased
 from dotenv import load_dotenv
 import os
 
-class DataFeeder:
-    def pullData(self, session, ticker: str, classifier_model: str, feature_set: str)->list[TradeBotDataFeed]:
-        with session() as db:
-            # Create an alias for the subquery
-            classifier_subq = (
-                select(
-                    ClassifierResult.report_date.label('report_date'),
-                    ClassifierResult.ticker.label('ticker'),
-                    ClassifierResult.model.label('model'),
-                    ClassifierResult.feature_set.label('feature_set'),
-                    ClassifierResult.uptrend_prob.label('uptrend_prob'),
-                    ClassifierResult.side_prob.label('side_prob'),
-                    ClassifierResult.downtrend_prob.label('downtrend_prob'),
-                    ClassifierResult.predicted_label.label('predicted_label')
-                )
-                .where(
-                    (ClassifierResult.ticker == ticker) &
-                    (ClassifierResult.model == model) &
-                    (ClassifierResult.feature_set == feature_set)
-                )
-                .alias('classifier_subq')
-            )
 
-            # Perform the main query with a left join
-            query = (
-                select( 
-                    classifier_subq.c.report_date,
-                    classifier_subq.c.ticker,
-                    classifier_subq.c.model,
-                    classifier_subq.c.feature_set,
-                    classifier_subq.c.uptrend_prob,
-                    classifier_subq.c.side_prob,
-                    classifier_subq.c.downtrend_prob,
-                    classifier_subq.c.predicted_label,
-                    MarketData.open,
-                    MarketData.close
-                )
-                .select_from(
-                    classifier_subq.join(
-                        MarketData,
-                        (classifier_subq.c.report_date == MarketData.report_date)
-                        & (classifier_subq.c.ticker == MarketData.ticker)
-                    )
-                )
-            ).order_by(MarketData.report_date)
-
-            query_result = db.execute(query).all()
-            return [TradeBotDataFeed(*result) for result in query_result]
 
 ticker = "CVX"
 model = "CNNv0"
@@ -72,5 +21,35 @@ session = create_db_session(
     port=os.getenv("DB_PORT")
 )
 
-query_result = DataFeeder().pullData(session, ticker, model, feature_set)
+feeder = DataFeeder(session)
+query_result = feeder.pullData(ticker, model, feature_set)
 print(repr(query_result))
+
+# Initialize strategy
+params = LongOnlyStrategyParam(
+    initial_capital=10000,
+    sell_counter_threshold=3,
+    stop_loss_percentage=-0.05,
+    holding_period=20
+)
+strategy = LongOnlyStrategy(feeder, params)
+
+# Run strategy
+strategy.run(
+    ticker="CVX",
+    model="CNNv0",
+    feature_set="processed technical indicators (20 days)"
+)
+
+# Get results
+results = strategy.dump_trade_log()
+print(f"Final Capital: ${results['final_capital']:.2f}")
+print(f"Total Return: {results['total_return']:.2%}")
+print(f"Number of trades: {results['number_of_trades']}")
+
+# Print individual trades
+for trade in results['trades']:
+    if trade.action == 'BUY':
+        print(f"Bought on {trade.date} at ${trade.price:.2f}")
+    else:
+        print(f"Sold on {trade.date} at ${trade.price:.2f} ({trade.percentage_change:.2%}) - {trade.reason}")

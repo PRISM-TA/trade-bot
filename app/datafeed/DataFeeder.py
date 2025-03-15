@@ -7,8 +7,11 @@ from sqlalchemy.orm import aliased
 
 
 class DataFeeder:
-    def pullData(self, session, ticker: str, classifier_model: str, feature_set: str)->list[TradeBotDataFeed]:
-        with session() as db:
+    def __init__(self, session):
+        self.session=session
+
+    def pullData(self, ticker: str, classifier_model: str, feature_set: str)->list[TradeBotDataFeed]:
+        with self.session() as db:
             # Create an alias for the subquery
             classifier_subq = (
                 select(
@@ -23,7 +26,7 @@ class DataFeeder:
                 )
                 .where(
                     (ClassifierResult.ticker == ticker) &
-                    (ClassifierResult.model == model) &
+                    (ClassifierResult.model == classifier_model) &
                     (ClassifierResult.feature_set == feature_set)
                 )
                 .alias('classifier_subq')
