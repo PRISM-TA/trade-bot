@@ -34,6 +34,7 @@ Risk Management:
 - Automatic exit on sustained trend reversal signals
 """
 from app.models.MarketCondition import MarketCondition
+from app.models.TradeLog import TradeLog
 
 from app.strategies.BaseStrategy import BaseStrategy, BaseStrategyParam
 from app.datafeed.DataFeeder import DataFeeder
@@ -152,7 +153,7 @@ class LongOnlyStrategy(BaseStrategy):
         for change in self.percentage_changes:
             self.capital *= (1 + change)
 
-    def dump_trade_log(self) -> Dict:
+    def dump_trade_logs(self) -> list[TradeLog]:
         return {
             "initial_capital": self.param.initial_capital,
             "final_capital": self.capital,

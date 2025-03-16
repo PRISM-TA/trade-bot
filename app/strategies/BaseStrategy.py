@@ -1,4 +1,5 @@
 from app.datafeed.DataFeeder import DataFeeder
+from app.models.TradeLog import TradeLog
 
 class BaseStrategyParam:
     pass
@@ -11,5 +12,5 @@ class BaseStrategy:
     def run(self):
         pass
         
-    def dump_trade_log(self):
+    def dump_trade_logs(self)->list[TradeLog]:
         pass
