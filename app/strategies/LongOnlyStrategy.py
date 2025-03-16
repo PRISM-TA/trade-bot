@@ -132,6 +132,9 @@ class LongOnlyStrategy(BaseStrategy):
                     "Sell counter threshold reached"
                 )
                 continue
+        
+        if self.bought:
+            self._handle_sell(ticker, daily_data.report_date, daily_data.close, 100, "End of trading period")
 
     def dump_trade_logs(self) -> list[TradeLog]:
         return self.trades

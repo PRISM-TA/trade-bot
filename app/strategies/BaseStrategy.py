@@ -8,7 +8,7 @@ class BaseStrategyParam:
 
 class BaseStrategy:
     strategy_name: str
-    trades: list[TradeLog]
+    trades: list[TradeLog] = []
 
     def _handle_buy(self, ticker: str, date: date, price: float, portion: float):
         self.trades.append(
@@ -41,6 +41,9 @@ class BaseStrategy:
 
     def run(self):
         pass
-        
+
+    def clear_trade_logs(self):
+        self.trades = []
+
     def dump_trade_logs(self)->list[TradeLog]:
         pass
