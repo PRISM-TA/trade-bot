@@ -39,17 +39,8 @@ from app.models.TradeLog import TradeLog
 from app.strategies.BaseStrategy import BaseStrategy, BaseStrategyParam
 from app.datafeed.DataFeeder import DataFeeder
 
-from dataclasses import dataclass
-from typing import List, Dict
 from datetime import date
 
-@dataclass
-class TradeRecord:
-    date: date
-    action: str  # 'BUY' or 'SELL'
-    price: float
-    percentage_change: float = None
-    reason: str = None
 
 class LongOnlyStrategyParam(BaseStrategyParam):
     def __init__(
@@ -65,11 +56,17 @@ class LongOnlyStrategyParam(BaseStrategyParam):
         self.holding_period = holding_period
 
 class LongOnlyStrategy(BaseStrategy):
+    strategy_name: str = "LongOnlyStrategy"
+
+    buy_spot: float
+    sell_spot: float
+    bought: bool
+    day_counter: int
+    non_buy_counter: int
+    trades: list[TradeLog] = []
+
     def __init__(self, datafeeder: DataFeeder, param: LongOnlyStrategyParam):
         super().__init__(datafeeder, param)
-        self.capital = param.initial_capital
-        self.trades: List[TradeRecord] = []
-        self.percentage_changes: List[float] = []
         
         # Trading state
         self.buy_spot = 0
@@ -78,35 +75,36 @@ class LongOnlyStrategy(BaseStrategy):
         self.day_counter = 0
         self.non_buy_counter = 0
 
-    def _handle_buy(self, date: date, price: float):
+    def _handle_buy(self, ticker: str, date: date, price: float, portion: float):
         self.buy_spot = price
         self.bought = True
         self.day_counter = 0
         self.non_buy_counter = 0
         self.trades.append(
-            TradeRecord(
-                date=date,
+            TradeLog(
+                report_date=date,
+                ticker=ticker,
+                strategy=self.strategy_name,
                 action='BUY',
-                price=price
+                price=price,
+                portion=portion
             )
         )
 
-    def _handle_sell(self, date: date, price: float, reason: str):
+    def _handle_sell(self, ticker: str, date: date, price: float, portion: float, reason: str):
         self.sell_spot = price
         self.bought = False
         self.day_counter = 0
         self.non_buy_counter = 0
-        
-        percentage_change = (price - self.buy_spot) / self.buy_spot
-        self.percentage_changes.append(percentage_change)
-        
         self.trades.append(
-            TradeRecord(
-                date=date,
+            TradeLog(
+                report_date=date,
+                ticker=ticker,
+                strategy=self.strategy_name,
                 action='SELL',
                 price=price,
-                percentage_change=percentage_change,
-                reason=reason
+                portion=portion,
+                note=reason
             )
         )
 
@@ -116,7 +114,12 @@ class LongOnlyStrategy(BaseStrategy):
         for daily_data in datafeed:
             # Buy MarketCondition
             if not self.bought and daily_data.predicted_label == MarketCondition.uptrend:
-                self._handle_buy(daily_data.report_date, daily_data.close)
+                self._handle_buy(
+                    ticker, 
+                    daily_data.report_date, 
+                    daily_data.close, 
+                    100
+                )
                 continue
 
             # Update counters
@@ -133,8 +136,10 @@ class LongOnlyStrategy(BaseStrategy):
                 current_loss_percentage = (daily_data.close - self.buy_spot) / self.buy_spot
                 if current_loss_percentage <= self.param.stop_loss_percentage:
                     self._handle_sell(
+                        ticker,
                         daily_data.report_date, 
                         daily_data.close,
+                        100,
                         f"Stop loss triggered at {current_loss_percentage:.2%}"
                     )
                     continue
@@ -142,22 +147,13 @@ class LongOnlyStrategy(BaseStrategy):
             # Check sell counter threshold
             if self.bought and self.non_buy_counter >= self.param.sell_counter_threshold:
                 self._handle_sell(
+                    ticker,
                     daily_data.report_date,
                     daily_data.close,
+                    100,
                     "Sell counter threshold reached"
                 )
                 continue
 
-        # Calculate final capital
-        self.capital = self.param.initial_capital
-        for change in self.percentage_changes:
-            self.capital *= (1 + change)
-
     def dump_trade_logs(self) -> list[TradeLog]:
-        return {
-            "initial_capital": self.param.initial_capital,
-            "final_capital": self.capital,
-            "total_return": (self.capital - self.param.initial_capital) / self.param.initial_capital,
-            "number_of_trades": len(self.trades),
-            "trades": self.trades
-        }
+        return self.trades

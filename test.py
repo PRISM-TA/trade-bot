@@ -1,10 +1,10 @@
 from app.db.session import create_db_session
+from app.db.TradeLogUpload import upload_trade_logs_to_database
 from app.strategies.LongOnlyStrategy import LongOnlyStrategy, LongOnlyStrategyParam
 from app.datafeed.DataFeeder import DataFeeder
 
 from dotenv import load_dotenv
 import os
-
 
 
 ticker = "CVX"
@@ -42,14 +42,14 @@ strategy.run(
 )
 
 # Get results
-results = strategy.dump_trade_log()
-print(f"Final Capital: ${results['final_capital']:.2f}")
-print(f"Total Return: {results['total_return']:.2%}")
-print(f"Number of trades: {results['number_of_trades']}")
+results = strategy.dump_trade_logs()
 
 # Print individual trades
-for trade in results['trades']:
+for trade in results:
     if trade.action == 'BUY':
-        print(f"Bought on {trade.date} at ${trade.price:.2f}")
+        print(f"Bought on {trade.report_date} at ${trade.price:.2f}")
     else:
-        print(f"Sold on {trade.date} at ${trade.price:.2f} ({trade.percentage_change:.2%}) - {trade.reason}")
+        print(f"Sold on {trade.report_date} at ${trade.price:.2f} - {trade.note}")
+
+# Upload trade logs
+# upload_trade_logs_to_database(session, results)
