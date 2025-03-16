@@ -1,6 +1,7 @@
 from app.db.session import create_db_session
 from app.db.TradeLogUpload import upload_trade_logs_to_database
 from app.strategies.LongOnlyStrategy import LongOnlyStrategy, LongOnlyStrategyParam
+from app.strategies.BAHStrategy import BAHStrategy, BAHParam
 from app.datafeed.DataFeeder import DataFeeder
 
 from dotenv import load_dotenv
@@ -26,13 +27,15 @@ query_result = feeder.pullData(ticker, model, feature_set)
 print(repr(query_result))
 
 # Initialize strategy
-params = LongOnlyStrategyParam(
-    initial_capital=10000,
-    sell_counter_threshold=3,
-    stop_loss_percentage=-0.05,
-    holding_period=20
-)
-strategy = LongOnlyStrategy(feeder, params)
+# params = LongOnlyStrategyParam(
+#     sell_counter_threshold=3,
+#     stop_loss_percentage=-0.05,
+#     holding_period=20
+# )
+# strategy = LongOnlyStrategy(feeder, params)
+
+params = BAHParam()
+strategy = BAHStrategy(feeder, params)
 
 # Run strategy
 strategy.run(

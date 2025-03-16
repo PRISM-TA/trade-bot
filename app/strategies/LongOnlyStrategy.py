@@ -16,7 +16,6 @@ The strategy exits positions under three scenarios:
 3. Holding Period: The uptrend prediction validity is limited to a specified number of days (default 20 days)
 
 Parameters:
-- initial_capital: Starting capital for the strategy (default $10,000)
 - sell_counter_threshold: Number of consecutive non-uptrend days before forced exit (default 3 days)
 - stop_loss_percentage: Maximum allowed loss before position is closed (default -5%)
 - holding_period: Maximum number of days to hold based on a single uptrend prediction (default 20 days)
@@ -25,7 +24,7 @@ Trade Management:
 - Each trade is recorded with entry/exit dates, prices, and reasons for exit
 - Position sizing is fixed (100% of capital)
 - Returns are compounded across trades
-- Performance is tracked through trade records and capital changes
+- Performance is tracked through trade recordsx
 
 Risk Management:
 - Stop loss orders to limit downside risk
@@ -45,12 +44,10 @@ from datetime import date
 class LongOnlyStrategyParam(BaseStrategyParam):
     def __init__(
         self,
-        initial_capital: float = 10000,
         sell_counter_threshold: int = 3,
         stop_loss_percentage: float = -0.05,
         holding_period: int = 20
     ):
-        self.initial_capital = initial_capital
         self.sell_counter_threshold = sell_counter_threshold
         self.stop_loss_percentage = stop_loss_percentage
         self.holding_period = holding_period
@@ -80,33 +77,14 @@ class LongOnlyStrategy(BaseStrategy):
         self.bought = True
         self.day_counter = 0
         self.non_buy_counter = 0
-        self.trades.append(
-            TradeLog(
-                report_date=date,
-                ticker=ticker,
-                strategy=self.strategy_name,
-                action='BUY',
-                price=price,
-                portion=portion
-            )
-        )
+        super()._handle_buy(ticker, date, price, portion)
 
     def _handle_sell(self, ticker: str, date: date, price: float, portion: float, reason: str):
         self.sell_spot = price
         self.bought = False
         self.day_counter = 0
         self.non_buy_counter = 0
-        self.trades.append(
-            TradeLog(
-                report_date=date,
-                ticker=ticker,
-                strategy=self.strategy_name,
-                action='SELL',
-                price=price,
-                portion=portion,
-                note=reason
-            )
-        )
+        super()._handle_sell(ticker, date, price, portion, reason)
 
     def run(self, ticker: str, model: str, feature_set: str):
         datafeed = self.datafeeder.pullData(ticker=ticker, classifier_model=model, feature_set=feature_set)
