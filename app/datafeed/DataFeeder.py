@@ -1,6 +1,7 @@
 from app.models.TradeBotDataFeed import TradeBotDataFeed
 from app.models.ClassifierResult import ClassifierResult
 from app.models.MarketData import MarketData
+from app.models.EquityIndicators import EquityIndicators
 
 from sqlalchemy import select, label
 from sqlalchemy.orm import aliased
@@ -44,13 +45,37 @@ class DataFeeder:
                     classifier_subq.c.downtrend_prob,
                     classifier_subq.c.predicted_label,
                     MarketData.open,
-                    MarketData.close
+                    MarketData.close,
+                    EquityIndicators.rsi_1,
+                    EquityIndicators.rsi_2,
+                    EquityIndicators.rsi_3,
+                    EquityIndicators.rsi_4,
+                    EquityIndicators.rsi_5,
+                    EquityIndicators.rsi_6,
+                    EquityIndicators.rsi_7,
+                    EquityIndicators.rsi_8,
+                    EquityIndicators.rsi_9,
+                    EquityIndicators.rsi_10,
+                    EquityIndicators.rsi_11,
+                    EquityIndicators.rsi_12,
+                    EquityIndicators.rsi_13,
+                    EquityIndicators.rsi_14,
+                    EquityIndicators.rsi_15,
+                    EquityIndicators.rsi_16,
+                    EquityIndicators.rsi_17,
+                    EquityIndicators.rsi_18,
+                    EquityIndicators.rsi_19,
+                    EquityIndicators.rsi_20,
                 )
                 .select_from(
                     classifier_subq.join(
                         MarketData,
                         (classifier_subq.c.report_date == MarketData.report_date)
                         & (classifier_subq.c.ticker == MarketData.ticker)
+                    ).join(
+                        EquityIndicators,
+                        (classifier_subq.c.report_date == EquityIndicators.report_date)
+                        & (classifier_subq.c.ticker == EquityIndicators.ticker)
                     )
                 )
             ).order_by(MarketData.report_date)
