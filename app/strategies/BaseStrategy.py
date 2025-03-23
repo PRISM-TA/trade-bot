@@ -13,7 +13,7 @@ class BaseStrategy:
     strategy_name: str
     trades: list[TradeLog] = []
 
-    def _handle_buy(self, ticker: str, date: date, price: float, shares: float):
+    def _handle_buy(self, ticker: str, date: date, price: float, shares: float, reason: str=""):
         self.trades.append(
             TradeLog(
                 report_date=date,
@@ -21,7 +21,8 @@ class BaseStrategy:
                 strategy=self.strategy_name,
                 action='BUY',
                 price=price,
-                shares=shares
+                shares=shares,
+                note=reason
             )
         )
     

@@ -7,9 +7,10 @@ class TradeLog(Base):
     __tablename__ = 'trade_log'
     __table_args__ = {'schema': 'fyp'}
 
-    report_date = Column(Date, primary_key=True)
-    ticker = Column(String, primary_key=True)
-    strategy = Column(String, primary_key=True)
+    trade_id = Column(Integer, primary_key=True)
+    report_date = Column(Date)
+    ticker = Column(String)
+    strategy = Column(String)
     action = Column(String) 
     price = Column(Float(8))
     shares = Column(Float(8))

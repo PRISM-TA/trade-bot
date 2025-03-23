@@ -15,7 +15,7 @@ def calculate_pnl(initial_capital: float, trade_logs: list[TradeLog]) -> float:
                 holdings[trade.ticker] = trade.shares
 
         elif trade.action == 'SELL':
-            if trade.ticker in holdings and holdings[trade.ticker] > 0:
+            if trade.ticker in holdings:
                 sell_amount = trade.shares * trade.price
                 holdings[trade.ticker] -= trade.shares
                 current_capital += sell_amount
