@@ -25,18 +25,21 @@ feeder = DataFeeder(session)
 params_target = LongOnlyStrategyParam(
     sell_counter_threshold=3,
     stop_loss_percentage=-0.05,
-    holding_period=20
+    holding_period=20,
+    initial_capital=10000
 )
 strategy_target = LongOnlyStrategy(feeder, params_target)
 
-params_benchmark = BAHParam()
+params_benchmark = BAHParam(
+    initial_capital=10000
+)
 strategy_benchmark = BAHStrategy(feeder, params_benchmark)
 
 for ticker in ["AAPL", "AXP", "BA", "CAT", "CSCO", "CVX", "DD", "DIS", "GE", "HD", "IBM", "INTC", "JNJ", "JPM", "KO", "MCD", "MMM", "MRK", "MSFT", "NKE", "PFE", "PG", "TRV", "UNH", "UTX", "VZ", "WMT", "XOM"]:
     pnl_stats = {}
     for strategy in [strategy_target, strategy_benchmark]:
-        # Clear trade logs
-        strategy.clear_trade_logs()
+        # Reset states
+        strategy.reset()
 
         # Run strategy
         strategy.run(

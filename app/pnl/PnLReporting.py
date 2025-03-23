@@ -1,24 +1,23 @@
 from app.models.TradeLog import TradeLog
 
+# TODO: use shares instead of sharess
 def calculate_pnl(initial_capital: float, trade_logs: list[TradeLog]) -> float:
     current_capital = initial_capital
     holdings = {}  # Dictionary to track holdings per ticker
 
     for trade in trade_logs:
         if trade.action == 'BUY':
-            buy_amount = current_capital * (trade.portion / 100)
-            shares_bought = buy_amount / trade.price
-            current_capital -= buy_amount
+            current_capital -= trade.price * trade.shares
 
             if trade.ticker in holdings:
-                holdings[trade.ticker] += shares_bought
+                holdings[trade.ticker] += trade.shares
             else:
-                holdings[trade.ticker] = shares_bought
+                holdings[trade.ticker] = trade.shares
 
         elif trade.action == 'SELL':
             if trade.ticker in holdings and holdings[trade.ticker] > 0:
-                sell_amount = holdings[trade.ticker] * (trade.portion / 100) * trade.price
-                holdings[trade.ticker] -= holdings[trade.ticker] * (trade.portion / 100)
+                sell_amount = trade.shares * trade.price
+                holdings[trade.ticker] -= trade.shares
                 current_capital += sell_amount
             else:
                 print(f"No sufficient holdings found for {trade.ticker} to sell")

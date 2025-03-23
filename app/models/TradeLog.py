@@ -12,7 +12,7 @@ class TradeLog(Base):
     strategy = Column(String, primary_key=True)
     action = Column(String) 
     price = Column(Float(8))
-    portion = Column(Float(8))
+    shares = Column(Float(8))
     note = Column(String)
 
     def __repr__(self):
