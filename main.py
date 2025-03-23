@@ -2,6 +2,7 @@ from app.db.session import create_db_session
 from app.db.TradeLogUpload import upload_trade_logs_to_database
 from app.strategies.LongOnlyStrategy import LongOnlyStrategy, LongOnlyStrategyParam
 from app.strategies.BAHStrategy import BAHStrategy, BAHParam
+from app.strategies.ShortOnlyStrategy import ShortOnlyStrategy, ShortOnlyStrategyParam
 from app.strategies.RouletteStrategy import RouletteStrategy, RouletteStrategyParam, DecisionFactory
 from app.pnl.PnLReporting import calculate_pnl
 from app.datafeed.DataFeeder import DataFeeder
@@ -23,12 +24,20 @@ session = create_db_session(
 
 feeder = DataFeeder(session)
 
-params_target = RouletteStrategyParam(
-    initial_capital=10000,
-    roulette_size=20,
-    decision_factory=DecisionFactory
+params_target = ShortOnlyStrategyParam(
+    sell_counter_threshold=3,
+    stop_loss_percentage=-0.05,
+    holding_period=20,
+    initial_capital=10000
 )
-strategy_target = RouletteStrategy(feeder, params_target)
+strategy_target = ShortOnlyStrategy(feeder, params_target)
+
+# params_target = RouletteStrategyParam(
+#     initial_capital=10000,
+#     roulette_size=20,
+#     decision_factory=DecisionFactory
+# )
+# strategy_target = RouletteStrategy(feeder, params_target)
 
 # params_target = LongOnlyStrategyParam(
 #     sell_counter_threshold=3,
