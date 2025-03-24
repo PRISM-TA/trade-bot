@@ -24,20 +24,20 @@ session = create_db_session(
 
 feeder = DataFeeder(session)
 
-params_target = ShortOnlyStrategyParam(
-    sell_counter_threshold=3,
-    stop_loss_percentage=-0.05,
-    holding_period=20,
-    initial_capital=10000
-)
-strategy_target = ShortOnlyStrategy(feeder, params_target)
-
-# params_target = RouletteStrategyParam(
-#     initial_capital=10000,
-#     roulette_size=20,
-#     decision_factory=DecisionFactory
+# params_target = ShortOnlyStrategyParam(
+#     sell_counter_threshold=3,
+#     stop_loss_percentage=-0.05,
+#     holding_period=20,
+#     initial_capital=10000
 # )
-# strategy_target = RouletteStrategy(feeder, params_target)
+# strategy_target = ShortOnlyStrategy(feeder, params_target)
+
+params_target = RouletteStrategyParam(
+    initial_capital=10000,
+    roulette_size=20,
+    decision_factory=DecisionFactory
+)
+strategy_target = RouletteStrategy(feeder, params_target)
 
 # params_target = LongOnlyStrategyParam(
 #     sell_counter_threshold=3,
@@ -71,6 +71,9 @@ for ticker in ["AAPL", "AXP", "BA", "CAT", "CSCO", "CVX", "DD", "DIS", "GE", "HD
         # Calculate PnL
         pnl = calculate_pnl(10000, results)
         pnl_stats[strategy.strategy_name] = pnl
+
+        # Upload results to database
+        upload_trade_logs_to_database(session, results)
         
     result_status = "PASS" if pnl_stats[strategy_target.strategy_name] > pnl_stats[strategy_benchmark.strategy_name] else "FAIL"
     
