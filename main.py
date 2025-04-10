@@ -10,7 +10,7 @@ from app.datafeed.DataFeeder import DataFeeder
 from dotenv import load_dotenv
 import os
 
-model = "CNNv0"
+model = "MLPv2"
 feature_set = "processed technical indicators (20 days)"
 
 load_dotenv()
@@ -73,7 +73,7 @@ for ticker in ["AAPL", "AXP", "BA", "CAT", "CSCO", "CVX", "DD", "DIS", "GE", "HD
         pnl_stats[strategy.strategy_name] = pnl
 
         # Upload results to database
-        upload_trade_logs_to_database(session, results)
+        # upload_trade_logs_to_database(session, results)
         
     result_status = "PASS" if pnl_stats[strategy_target.strategy_name] > pnl_stats[strategy_benchmark.strategy_name] else "FAIL"
     

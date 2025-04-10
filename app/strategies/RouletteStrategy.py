@@ -7,6 +7,7 @@ from app.models.TradeDecision import TradeDecision
 from app.models.TradeLog import TradeLog
 
 from collections.abc import Callable
+import numpy as np
 
 class DecisionFactory:
     def BuyAndHold(data: TradeBotDataFeed):
@@ -145,7 +146,8 @@ class RouletteStrategy(BaseStrategy):
         return cell
 
     def _setStrategy(self, data: TradeBotDataFeed, cell: RouletteCell):
-        cell.decision_function = self.param.decision_factory.getDecision(data.predicted_label)
+        predicted_label = np.argmax([data.uptrend_prob, max(data.side_prob, 0.5), data.downtrend_prob])
+        cell.decision_function = self.param.decision_factory.getDecision(predicted_label)
         match cell.decision_function:
             case DecisionFactory.BuyAndHold:
                 cell.active = True
